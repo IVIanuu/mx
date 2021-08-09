@@ -16,9 +16,11 @@
 
 package com.ivianuu.mx
 
+import android.os.*
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
@@ -33,6 +35,7 @@ import com.ivianuu.essentials.ui.material.Scaffold
 import com.ivianuu.essentials.ui.material.TopAppBar
 import com.ivianuu.essentials.ui.navigation.*
 import com.ivianuu.injekt.*
+import com.ivianuu.injekt.android.*
 import com.ivianuu.injekt.coroutines.*
 import com.ivianuu.injekt.scope.*
 import kotlinx.coroutines.flow.*
@@ -67,19 +70,28 @@ import kotlin.time.*
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
       ) {
-        Button(onClick = model.rollDices) {
+        Button(
+          modifier = Modifier.height(72.dp),
+          onClick = model.rollDices,
+          elevation = null
+        ) {
           Text(stringResource(R.string.roll_dices))
         }
 
         Spacer(Modifier.width(8.dp))
 
         AnimatedVisibility(model.dice1 != null) {
-          Button(onClick = model.toggleDicesVisibility) {
-            Text(
-              text = stringResource(
-                if (model.dicesVisible) R.string.hide_dices else R.string.show_dices
+          OutlinedButton(
+            onClick = model.toggleDicesVisibility,
+            modifier = Modifier.height(72.dp),
+          ) {
+            AnimatedContent(model.dicesVisible) { currentDicesVisible ->
+              Text(
+                text = stringResource(
+                  if (currentDicesVisible) R.string.hide_dices else R.string.show_dices
+                )
               )
-            )
+            }
           }
         }
       }
@@ -95,7 +107,12 @@ import kotlin.time.*
     Box(
       modifier = Modifier
         .size(128.dp)
-        .border(1.dp, Color.Black),
+        .border(
+          width = 1.dp,
+          color = Color.Black,
+          shape = RoundedCornerShape(8.dp)
+        )
+        .clickable {},
       contentAlignment = Alignment.Center
     ) {
       Text(if (currentVisible) currentDice?.toString() ?: "?" else "?")
@@ -112,7 +129,8 @@ import kotlin.time.*
 )
 
 @Provide fun gameModel(
-  scope: InjektCoroutineScope<KeyUiScope>
+  scope: InjektCoroutineScope<KeyUiScope>,
+  vibrator: @SystemService Vibrator
 ): @Scoped<KeyUiScope> StateFlow<GameModel> = scope.state(GameModel()) {
   action(GameModel.rollDices()) {
     val diceResult1 = (Math.random() * 6 + 1).toInt()
@@ -120,6 +138,8 @@ import kotlin.time.*
 
     val dice1 = if (diceResult2 > diceResult1) diceResult2 else diceResult1
     val dice2 = if (diceResult2 > diceResult1) diceResult1 else diceResult2
+
+    vibrator.vibrate(VibrationEffect.createOneShot(100, 10))
 
     update {
       copy(dice1 = dice1, dice2 = dice2, dicesVisible = true)
