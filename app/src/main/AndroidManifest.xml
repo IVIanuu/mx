@@ -29,5 +29,4 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Es"
         tools:ignore="AllowBackup,GoogleAppIndexingWarning"/>
-
 </manifest>
