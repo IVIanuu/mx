@@ -72,7 +72,9 @@ import kotlin.time.*
         verticalAlignment = Alignment.CenterVertically
       ) {
         Button(
-          modifier = Modifier.height(72.dp),
+          modifier = Modifier
+            .height(72.dp)
+            .widthIn(min = 170.dp),
           onClick = model.rollDices,
           elevation = null
         ) {
@@ -84,7 +86,9 @@ import kotlin.time.*
         AnimatedVisibility(model.dice1 != null) {
           OutlinedButton(
             onClick = model.toggleDicesVisibility,
-            modifier = Modifier.height(72.dp),
+            modifier = Modifier
+              .height(72.dp)
+              .widthIn(min = 170.dp),
           ) {
             AnimatedContent(model.dicesVisible) { currentDicesVisible ->
               Text(
