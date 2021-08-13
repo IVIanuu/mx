@@ -32,8 +32,9 @@ import com.ivianuu.essentials.optics.*
 import com.ivianuu.essentials.store.*
 import com.ivianuu.essentials.ui.animation.*
 import com.ivianuu.essentials.ui.animation.transition.*
+import com.ivianuu.essentials.ui.core.*
+import com.ivianuu.essentials.ui.material.*
 import com.ivianuu.essentials.ui.material.Scaffold
-import com.ivianuu.essentials.ui.material.TopAppBar
 import com.ivianuu.essentials.ui.navigation.*
 import com.ivianuu.injekt.*
 import com.ivianuu.injekt.android.*
@@ -44,275 +45,116 @@ import kotlin.time.*
 
 @Provide class GameKey : RootKey
 
+val GradientPairs = listOf(
+  Color(0xFFEEBD89) to Color(0xFFD13ABD),
+  Color(0xFF9600FF) to Color(0xFFAEBAF8),
+  Color(0xFFF6EA41) to Color(0xFFF048C6),
+  Color(0xFFBB73E0) to Color(0xFFFF8DDB),
+  Color(0xFF0CCDA3) to Color(0xFFC1FCD3),
+  Color(0xFFC973FF) to Color(0xFFAEBAF8),
+  Color(0xFFF9957F) to Color(0xFFF2F5D0)
+)
+
 @OptIn(ExperimentalAnimationApi::class)
 @Provide val gameUi: ModelKeyUi<GameKey, GameModel> = {
-  Scaffold(
-    topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) }
+  val backgroundColors = remember(model.dice1 to model.dice2) {
+    GradientPairs.random().toList()
+  }
+
+  val backgroundBrush = Brush.verticalGradient(backgroundColors)
+
+  CompositionLocalProvider(
+    LocalContentColor provides guessingContentColorFor(backgroundColors[1])
   ) {
-    Column(
-      modifier = Modifier.fillMaxSize(),
-      verticalArrangement = Arrangement.Center,
-      horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+      modifier = Modifier.fillMaxSize()
+        .background(backgroundBrush)
     ) {
-      Row(
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        Dice(dice = model.dice1, model.dicesVisible)
-
-        Spacer(Modifier.width(8.dp))
-
-        Dice(dice = model.dice2, model.dicesVisible)
-      }
-
-      Spacer(Modifier.height(8.dp))
-
-      Row(
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        Button(
+      InsetsPadding {
+        Column(
           modifier = Modifier
-            .height(72.dp)
-            .widthIn(min = 170.dp),
-          onClick = model.rollDices,
-          elevation = null
+            .fillMaxSize()
         ) {
-          Text(stringResource(R.string.roll_dices))
-        }
-
-        Spacer(Modifier.width(8.dp))
-
-        AnimatedVisibility(model.dice1 != null) {
-          OutlinedButton(
-            onClick = model.toggleDicesVisibility,
+          Row(
             modifier = Modifier
-              .height(72.dp)
-              .widthIn(min = 170.dp),
+              .fillMaxWidth()
+              .height(56.dp)
+              .padding(horizontal = 16.dp)
           ) {
-            AnimatedContent(model.dicesVisible) { currentDicesVisible ->
-              Text(
-                text = stringResource(
-                  if (currentDicesVisible) R.string.hide_dices else R.string.show_dices
-                )
-              )
+            Text(
+              text = stringResource(R.string.app_name),
+              style = MaterialTheme.typography.h4,
+              color = guessingContentColorFor(backgroundColors.first())
+            )
+
+            Spacer(Modifier.weight(1f))
+          }
+
+          Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+          ) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.Center,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Dice(dice = model.dice1, model.dicesVisible)
+
+              Spacer(Modifier.width(8.dp))
+
+              Dice(dice = model.dice2, model.dicesVisible)
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.Center,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Button(
+                modifier = Modifier
+                  .height(72.dp)
+                  .widthIn(min = 170.dp),
+                colors = ButtonDefaults.buttonColors(
+                  backgroundColor = LocalContentColor.current,
+                  contentColor = backgroundColors.first()
+                ),
+                onClick = model.rollDices,
+                elevation = null
+              ) {
+                Text(stringResource(R.string.roll_dices))
+              }
+
+              Spacer(Modifier.width(8.dp))
+
+              AnimatedVisibility(model.dice1 != null) {
+                OutlinedButton(
+                  onClick = model.toggleDicesVisibility,
+                  modifier = Modifier
+                    .height(72.dp)
+                    .widthIn(min = 170.dp),
+                  border = BorderStroke(1.dp, LocalContentColor.current),
+                  colors = ButtonDefaults.outlinedButtonColors(
+                    backgroundColor = Color.Transparent,
+                    contentColor = LocalContentColor.current
+                  )
+                ) {
+                  AnimatedContent(model.dicesVisible) { currentDicesVisible ->
+                    Text(
+                      text = stringResource(
+                        if (currentDicesVisible) R.string.hide_dices else R.string.show_dices
+                      )
+                    )
+                  }
+                }
+              }
             }
           }
         }
       }
-    }
-  }
-}
-
-@Composable private fun Dice(dice: Int?, visible: Boolean) {
-  AnimatedBox(
-    current = dice to visible,
-    transition = CrossFadeStackTransition(defaultAnimationSpec(120.milliseconds))
-  ) { (currentDice, currentVisible) ->
-    Box(
-      modifier = Modifier
-        .size(128.dp)
-        .border(
-          width = 1.dp,
-          color = Color.Black,
-          shape = RoundedCornerShape(8.dp)
-        )
-        .clickable {},
-      contentAlignment = Alignment.Center
-    ) {
-      if (currentDice == null || !currentVisible) {
-        Text(
-          text = "?",
-          fontSize = 36.sp
-        )
-      } else {
-        DiceContent(currentDice)
-      }
-    }
-  }
-}
-
-@Composable private fun DiceContent(dice: Int) {
-  val dotColor = LocalContentColor.current
-  Canvas(Modifier.fillMaxSize()) {
-    val dotRadius = 8.dp.toPx()
-
-    when (dice) {
-      1 -> {
-        drawCircle(color = dotColor, radius = dotRadius)
-      }
-      2 -> {
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.25f,
-            y = size.height * 0.75f
-          )
-        )
-
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.75f,
-            y = size.height * 0.25f
-          )
-        )
-      }
-      3 -> {
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.25f,
-            y = size.height * 0.75f
-          )
-        )
-
-        drawCircle(color = dotColor, radius = dotRadius)
-
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.75f,
-            y = size.height * 0.25f
-          )
-        )
-      }
-      4 -> {
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.25f,
-            y = size.height * 0.25f
-          )
-        )
-
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.75f,
-            y = size.height * 0.25f
-          )
-        )
-
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.25f,
-            y = size.height * 0.75f
-          )
-        )
-
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.75f,
-            y = size.height * 0.75f
-          )
-        )
-      }
-      5 -> {
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.25f,
-            y = size.height * 0.25f
-          )
-        )
-
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.75f,
-            y = size.height * 0.25f
-          )
-        )
-
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.25f,
-            y = size.height * 0.75f
-          )
-        )
-
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.75f,
-            y = size.height * 0.75f
-          )
-        )
-
-        drawCircle(color = dotColor, radius = dotRadius)
-      }
-      6 -> {
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.25f,
-            y = size.height * 0.2f
-          )
-        )
-
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.75f,
-            y = size.height * 0.2f
-          )
-        )
-
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.25f,
-            y = size.height * 0.5f
-          )
-        )
-
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.75f,
-            y = size.height * 0.5f
-          )
-        )
-
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.25f,
-            y = size.height * 0.8f
-          )
-        )
-
-        drawCircle(
-          color = dotColor,
-          radius = dotRadius,
-          center = Offset(
-            x = size.width * 0.75f,
-            y = size.height * 0.8f
-          )
-        )
-      }
-      else -> throw AssertionError("Unexpected dice $dice")
     }
   }
 }
